@@ -1,0 +1,12 @@
+{
+  "name": "trigger-dev-skills",
+  "description": "Official Trigger.dev v3 authoring skills: setup, config, tasks, realtime, AI agents, cost savings",
+  "version": "1.0.0",
+  "author": {
+    "name": "Trigger.dev",
+    "email": "help@trigger.dev"
+  },
+  "homepage": "https://github.com/triggerdotdev/skills",
+  "repository": "https://github.com/triggerdotdev/skills",
+  "keywords": ["skills", "trigger.dev", "background-jobs", "tasks", "automation"]
+}

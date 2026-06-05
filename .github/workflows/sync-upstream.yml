@@ -1,0 +1,49 @@
+name: sync-upstream
+
+# Weekly controlled sync of upstream triggerdotdev/skills into this Grundwerk fork.
+# Opens a REVIEWABLE PR (never auto-merges) so upstream changes are reviewed before
+# they propagate to every laptop (supply-chain gate). Our additive wrapper
+# (.claude-plugin/, skills/ symlinks) is not present upstream, so it survives the merge.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # Monday 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Sync upstream and open PR on change
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/triggerdotdev/skills.git || true
+          git fetch upstream --quiet
+          UP="$(git rev-parse upstream/main 2>/dev/null || git rev-parse upstream/master)"
+          if git merge-base --is-ancestor "$UP" HEAD; then
+            echo "Fork already up to date with upstream. Nothing to do."
+            exit 0
+          fi
+          BR="sync-upstream-$(date -u +%Y%m%d-%H%M)"
+          git checkout -b "$BR"
+          if git merge --no-edit "$UP"; then
+            git push origin "$BR"
+            gh pr create --base main --head "$BR" \
+              --title "chore: sync skills from upstream triggerdotdev/skills" \
+              --body "Automated weekly upstream sync. Review the diff before merge (supply-chain gate). The .claude-plugin/ + skills/ wrapper is Grundwerk-vendored and not from upstream." \
+              || echo "PR may already exist for this branch."
+          else
+            git merge --abort
+            echo "::warning::Upstream sync hit a conflict (upstream likely touched a vendored file). Resolve manually: git fetch upstream && git merge upstream/main"
+          fi
