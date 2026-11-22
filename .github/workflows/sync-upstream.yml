@@ -16,11 +16,19 @@ permissions:
 
 jobs:
   sync:
-    runs-on: ubuntu-latest
+    # Hetzner statt GitHub-Runner (Regel CLAUDE.md §6: GitHub-Actions-Ausgaben sind nie bewilligt).
+    # hetzner-org ist das org-weite Scale-Set auf unserem Cluster; LANG setzt das Image nicht.
+    runs-on: hetzner-org
+    timeout-minutes: 15
+    env:
+      LANG: C.UTF-8
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # Das hetzner-org-Image bringt gh nicht mit (GitHub-Runner schon); der Schritt unten ruft `gh pr create`.
+      - name: gh bereitstellen
+        run: if ! command -v gh >/dev/null; then sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends gh; fi
       - name: Sync upstream and open PR on change
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
